@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { VpcStack } from '../lib/vpc-stack';
+import { AppStack } from '../lib/app-stack';
 
 
 const app = new cdk.App();
@@ -24,3 +25,11 @@ const vpcStack = new VpcStack(
     description: "Aws Cdk Three-Tier App Workshop VPC Stack"
   }
 );
+
+const appStack = new AppStack(app, 'AwsCdkThreeTierAppWorkshopAppStack', {
+  prefixName: 'AwsCdkThreeTierAppWorkshop',
+  vpc: vpcStack.vpc,
+  env: env,
+  description: "Aws Cdk Three-Tier App Workshop App Stack"
+});
+appStack.addDependency(vpcStack);
