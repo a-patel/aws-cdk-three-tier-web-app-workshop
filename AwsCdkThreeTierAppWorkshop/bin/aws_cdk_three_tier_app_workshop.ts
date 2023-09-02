@@ -26,10 +26,10 @@ const vpcStack = new VpcStack(
   }
 );
 
-const appStack = new AppStack(app, 'AwsCdkThreeTierAppWorkshopAppStack', {
-  prefixName: 'AwsCdkThreeTierAppWorkshop',
-  vpc: vpcStack.vpc,
-  env: env,
-  description: "Aws Cdk Three-Tier App Workshop App Stack"
-});
-appStack.addDependency(vpcStack);
+// const appStack = new AppStack(app, 'AwsCdkThreeTierAppWorkshopAppStack', {
+//   prefixName: 'AwsCdkThreeTierAppWorkshop',
+//   vpc: vpcStack.vpc,
+//   env: env,
+//   description: "Aws Cdk Three-Tier App Workshop App Stack"
+// });
+// appStack.addDependency(vpcStack);

@@ -12,9 +12,15 @@ interface VpcStackProps extends cdk.StackProps {
 export class VpcStack extends cdk.Stack {
   readonly vpc: ec2.Vpc;
   readonly publicSubnetIds: string[] = [];
-  readonly privateSubnetIds: string[] = [];
+  readonly appSubnetIds: string[] = [];
   readonly databaseSubnetIds: string[] = [];
   readonly workerSubnetIds: string[] = [];
+  // readonly webElbSecurityGroup: ec2.SecurityGroup;
+  // readonly webSecurityGroup: ec2.SecurityGroup;
+  readonly appElbSecurityGroup: ec2.SecurityGroup;
+  readonly appSecurityGroup: ec2.SecurityGroup;
+  readonly databaseSecurityGroup: ec2.SecurityGroup;
+  readonly bastionSecurityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, props?: VpcStackProps) {
     super(scope, id, props);
@@ -36,7 +42,7 @@ export class VpcStack extends cdk.Stack {
           cidrMask: 24,
         },
         {
-          name: "PrivateSubnet",
+          name: "AppSubnet",
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: 20,
         },
@@ -77,33 +83,33 @@ export class VpcStack extends cdk.Stack {
     /*****   Subnets   *****/
     const publicSubnets = this.vpc.selectSubnets({
       subnetType: ec2.SubnetType.PUBLIC,
-    }).subnets;
+    });
     // const publicSubnets = this.vpc.publicSubnets;
 
-    const privateSubnets = this.vpc.selectSubnets({
-      subnetGroupName: "PrivateSubnet",
+    const appSubnets = this.vpc.selectSubnets({
+      subnetGroupName: "AppSubnet",
       // subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-    }).subnets;
-    // const publicSubnets = this.vpc.privateSubnets;
+    });
+    // const publicSubnets = this.vpc.appSubnets;
 
     const databaseSubnets = this.vpc.selectSubnets({
       subnetGroupName: "DatabaseSubnet",
       // subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-    }).subnets;
+    });
 
     const workerSubnets = this.vpc.selectSubnets({
       subnetGroupName: "WorkerSubnet",
-    }).subnets;
+    });
 
     const allSubnets = [
-      ...publicSubnets,
-      ...privateSubnets,
-      ...databaseSubnets,
-      ...workerSubnets,
+      ...publicSubnets.subnets,
+      ...appSubnets.subnets,
+      ...databaseSubnets.subnets,
+      ...workerSubnets.subnets,
     ];
 
     // Subnet Tagging
-    for (const subnet of publicSubnets) {
+    for (const subnet of publicSubnets.subnets) {
       cdk.Aspects.of(subnet).add(
         new cdk.Tag(
           "Name",
@@ -116,7 +122,7 @@ export class VpcStack extends cdk.Stack {
       this.publicSubnetIds.push(subnet.subnetId);
     }
 
-    for (const subnet of privateSubnets) {
+    for (const subnet of appSubnets.subnets) {
       cdk.Aspects.of(subnet).add(
         new cdk.Tag(
           "Name",
@@ -126,23 +132,21 @@ export class VpcStack extends cdk.Stack {
         )
       );
 
-      this.privateSubnetIds.push(subnet.subnetId);
+      this.appSubnetIds.push(subnet.subnetId);
     }
 
-    for (const subnet of databaseSubnets) {
+    for (const subnet of databaseSubnets.subnets) {
       cdk.Aspects.of(subnet).add(
         new cdk.Tag(
           "Name",
-          `${props?.prefixName}-Database-${Helper.getAZ(
-            subnet.availabilityZone
-          )}-snet`
+          Helper.getSubnetName(props?.prefixName!, "Database", subnet.availabilityZone)
         )
       );
 
       this.databaseSubnetIds.push(subnet.subnetId);
     }
 
-    for (const subnet of workerSubnets) {
+    for (const subnet of workerSubnets.subnets) {
       cdk.Aspects.of(subnet).add(
         new cdk.Tag(
           "Name",
