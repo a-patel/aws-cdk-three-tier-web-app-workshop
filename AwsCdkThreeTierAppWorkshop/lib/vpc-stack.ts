@@ -159,6 +159,108 @@ export class VpcStack extends cdk.Stack {
       this.workerSubnetIds.push(subnet.subnetId);
     }
 
+    // Subnet Output
+
+    // const publicSubnetA = new PublicSubnet(this, "PublicSubnetA", {
+    //   // name: "EksCdkWorkshop-public-snet",
+    //   vpcId: vpc.vpcId,
+    //   cidrBlock: "10.0.0.0/24",
+    //   availabilityZone: vpc.availabilityZones[0],
+    //   mapPublicIpOnLaunch: true
+    // });
+
+    // const securityGroup = new SecurityGroup(this, 'sg', {
+    //   vpc: vpc
+    // });
+
+    // this.ingressSecurityGroup = new SecurityGroup(this, 'ingress-security-group', {
+    //   vpc: this.vpc,
+    //   allowAllOutbound: false,
+    //   securityGroupName: 'IngressSecurityGroup',
+    // });
+
+    // this.ingressSecurityGroup.addIngressRule(Peer.ipv4('10.0.0.0/16'), Port.tcp(3306));
+
+    // this.egressSecurityGroup = new SecurityGroup(this, 'egress-security-group', {
+    //     vpc: this.vpc,
+    //     allowAllOutbound: false,
+    //     securityGroupName: 'EgressSecurityGroup',
+    // });
+
+    // this.egressSecurityGroup.addEgressRule(Peer.anyIpv4(), Port.tcp(80));
+
+    // const nacl = new NetworkAcl(this, 'MyApp-NetworkAcl', {
+    //   vpc,
+    //   networkAclName: 'IsolatedSubnetNACL',
+    //   subnetSelection: databaseSubnets,
+    // })
+
+
+
+    /*****   Security Groups   *****/
+    // Bastion security group
+    this.bastionSecurityGroup = new ec2.SecurityGroup(this, 'Bastion-SG', {
+        vpc: this.vpc,
+        allowAllOutbound: false,
+        securityGroupName: Helper.getSecurityGroupName(props?.prefixName!, "Bastion"),
+    });
+
+    this.bastionSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(22)
+    );
+    
+    // Application ALB security group
+    this.appElbSecurityGroup = new ec2.SecurityGroup(this, 'AppElb-SG', {
+        vpc: this.vpc,
+        allowAllOutbound: false,
+        securityGroupName: Helper.getSecurityGroupName(props?.prefixName!, "AppElb"),
+    });
+
+    this.appElbSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443)
+    );
+
+    this.appElbSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(80)
+    );
+
+    // App security group
+    this.appSecurityGroup = new ec2.SecurityGroup(this, 'App-SG', {
+        vpc: this.vpc,
+        allowAllOutbound: false,
+        securityGroupName: Helper.getSecurityGroupName(props?.prefixName!, "App"),
+    });
+
+    this.appSecurityGroup.addIngressRule(
+      this.appElbSecurityGroup,
+      ec2.Port.tcp(443)
+    );
+
+    this.appSecurityGroup.addIngressRule(
+      this.appElbSecurityGroup,
+      ec2.Port.tcp(80)
+    );
+
+    this.appSecurityGroup.addIngressRule(
+      this.bastionSecurityGroup,
+      ec2.Port.tcp(22)
+    );
+
+    // Database security group
+    this.databaseSecurityGroup = new ec2.SecurityGroup(this, 'Database-SG', {
+        vpc: this.vpc,
+        allowAllOutbound: false,
+        securityGroupName: Helper.getSecurityGroupName(props?.prefixName!, "Database"),
+    });
+
+    this.databaseSecurityGroup.addIngressRule(
+      this.appSecurityGroup,
+      ec2.Port.tcp(5432)
+    );
+
     // Add tags to all assets within this stack
     cdk.Tags.of(this).add("CreatedBy", "CDK", { priority: 300 });
     cdk.Tags.of(this).add("Project", "AwsCdkThreeTierAppWorkshop", { priority: 300 });
