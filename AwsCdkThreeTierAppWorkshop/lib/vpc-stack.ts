@@ -261,6 +261,38 @@ export class VpcStack extends cdk.Stack {
       ec2.Port.tcp(5432)
     );
 
+
+    /*****   Network Acls   *****/
+    // Public NACL
+    const nacl = new ec2.NetworkAcl(this, 'Public-NACL', {
+      vpc: this.vpc,
+      networkAclName: Helper.getNetworkAclName(props?.prefixName!, "Public"),
+      subnetSelection: publicSubnets,
+    });
+
+    // App NACL
+    const appNacl = new ec2.NetworkAcl(this, 'App-NACL', {
+      vpc: this.vpc,
+      networkAclName: Helper.getNetworkAclName(props?.prefixName!, "App"),
+      subnetSelection: publicSubnets,
+    });
+
+    appSubnets.subnets.forEach((subnet: ec2.ISubnet, index: number) => {
+      appNacl.addEntry(`AppSubnets${index}Ingress`, {
+        cidr: ec2.AclCidr.ipv4(subnet.ipv4CidrBlock),
+        direction: ec2.TrafficDirection.INGRESS,
+        ruleNumber: 100 + index,
+        traffic: ec2.AclTraffic.allTraffic(),
+      });
+
+      appNacl.addEntry(`AppSubnets${index}Egress`, {
+        cidr: ec2.AclCidr.ipv4(subnet.ipv4CidrBlock),
+        direction: ec2.TrafficDirection.EGRESS,
+        ruleNumber: 100 + index,
+        traffic: ec2.AclTraffic.allTraffic(),
+      })
+    });
+
     // Add tags to all assets within this stack
     cdk.Tags.of(this).add("CreatedBy", "CDK", { priority: 300 });
     cdk.Tags.of(this).add("Project", "AwsCdkThreeTierAppWorkshop", { priority: 300 });
