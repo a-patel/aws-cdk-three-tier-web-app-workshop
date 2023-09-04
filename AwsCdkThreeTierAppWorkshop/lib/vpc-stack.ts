@@ -263,6 +263,7 @@ export class VpcStack extends cdk.Stack {
 
 
     /*****   Network Acls   *****/
+    /*
     // Public NACL
     const nacl = new ec2.NetworkAcl(this, 'Public-NACL', {
       vpc: this.vpc,
@@ -292,6 +293,7 @@ export class VpcStack extends cdk.Stack {
         traffic: ec2.AclTraffic.allTraffic(),
       })
     });
+*/
 
     // Add tags to all assets within this stack
     cdk.Tags.of(this).add("CreatedBy", "CDK", { priority: 300 });
